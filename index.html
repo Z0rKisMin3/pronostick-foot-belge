@@ -479,22 +479,59 @@ function renderPredictions(){
 // ═══════════════════════════════════════════
 // CONCOURS / JOUEURS / CHAT  (réutilisé du Mondial)
 // ═══════════════════════════════════════════
-async function joinContest(){
-  const inp=document.getElementById('pseudoInput');const name=(inp.value||'').trim();
-  if(name.length<2||name.length>20){showToast('⚠️ Pseudo 2-20 caractères');return}
-  try{const rows=await sb('players',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({name})});player={id:rows[0].id,name:rows[0].name};}
-  catch(err){const ex=await sb('players?name=eq.'+encodeURIComponent(name)+'&select=id,name').catch(()=>null);
-    if(ex&&ex[0]){if(!confirm(`Le pseudo « ${name} » existe déjà. C'est toi ?`))return;player={id:ex[0].id,name:ex[0].name}}else{showToast('❌ Impossible');return}}
-  localStorage.setItem(PLAYER_KEY,JSON.stringify(player));showToast(`👋 Bienvenue ${player.name} !`);await syncNow();renderAll();
+let authMode='login';
+function val(id){const e=document.getElementById(id);return e?e.value.trim():''}
+function cleanErr(err){try{return JSON.parse(err.message).message||err.message}catch{return String(err.message||err)}}
+function authCardHTML(){
+  const inp='padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--txt);font-family:inherit;font-size:16px';
+  if(authMode==='register'){
+    return `<div class="help-card" style="max-width:420px;text-align:center"><h3>🆕 Créer mon compte</h3>
+      <p style="font-size:.82rem">Un pseudo + un mot de passe perso pour <strong>protéger ton pseudo</strong> (personne d'autre ne pourra l'utiliser).</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+        <input id="auName" maxlength="20" placeholder="Pseudo" style="${inp}">
+        <input id="auPass" type="password" placeholder="Mot de passe (4 caractères min.)" style="${inp}">
+        <input id="auEmail" placeholder="Email (optionnel)" style="${inp}">
+        <button class="modal-btn" style="margin:4px auto 0" onclick="doRegister()">⚽ S'inscrire</button></div>
+      <p style="font-size:.8rem;margin-top:12px;color:var(--muted2)">Déjà un compte ? <a onclick="authMode='login';refreshAuth()" style="color:var(--purple);cursor:pointer;font-weight:700">Se connecter</a></p></div>`;
+  }
+  return `<div class="help-card" style="max-width:420px;text-align:center"><h3>🔑 Connexion</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+      <input id="auName" maxlength="20" placeholder="Pseudo" style="${inp}" onkeydown="if(event.key==='Enter')document.getElementById('auPass').focus()">
+      <input id="auPass" type="password" placeholder="Mot de passe" style="${inp}" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="modal-btn" style="margin:4px auto 0" onclick="doLogin()">Se connecter</button></div>
+    <p style="font-size:.8rem;margin-top:12px;color:var(--muted2)">Pas encore de compte ? <a onclick="authMode='register';refreshAuth()" style="color:var(--purple);cursor:pointer;font-weight:700">S'inscrire</a></p>
+    <p style="font-size:.74rem;margin-top:8px;color:var(--muted)">🔒 Mot de passe oublié ? Demande à l'organisateur de le réinitialiser.</p></div>`;
 }
-function leaveContest(){if(!confirm('Se déconnecter de ce pseudo ?'))return;player=null;localStorage.removeItem(PLAYER_KEY);renderAll();}
+function refreshAuth(){if(currentTab==='lead')renderLeaderboard();else if(currentTab==='chat')renderChatTab()}
+async function doRegister(){
+  const name=val('auName'),pass=val('auPass'),email=val('auEmail');
+  if(!name||!pass){showToast('⚠️ Pseudo et mot de passe requis');return}
+  try{const r=await sb('rpc/register_player',{method:'POST',body:JSON.stringify({p_name:name,p_email:email||null,p_password:pass})});
+    player={id:r.id,name:r.name,token:r.token};localStorage.setItem(PLAYER_KEY,JSON.stringify(player));showToast(`👋 Bienvenue ${player.name} !`);await syncNow();renderAll();}
+  catch(err){showToast('❌ '+cleanErr(err))}
+}
+async function doLogin(){
+  const name=val('auName'),pass=val('auPass');
+  if(!name||!pass){showToast('⚠️ Pseudo et mot de passe requis');return}
+  try{const r=await sb('rpc/login_player',{method:'POST',body:JSON.stringify({p_name:name,p_password:pass})});
+    player={id:r.id,name:r.name,token:r.token};localStorage.setItem(PLAYER_KEY,JSON.stringify(player));showToast(`👋 Salut ${player.name} !`);await syncNow();renderAll();}
+  catch(err){showToast('❌ '+cleanErr(err))}
+}
+function leaveContest(){if(!confirm('Se déconnecter ?'))return;player=null;localStorage.removeItem(PLAYER_KEY);authMode='login';renderAll();}
+async function adminResetPwd(){
+  if(!adminCode)return;
+  const name=prompt('Pseudo du joueur à réinitialiser :');if(!name)return;
+  const np=prompt(`Nouveau mot de passe pour « ${name} » :`);if(!np)return;
+  try{await sb('rpc/admin_reset_password',{method:'POST',body:JSON.stringify({p_name:name,p_new_password:np,p_code:adminCode})});showToast(`🔧 Mot de passe de ${name} réinitialisé`)}
+  catch(err){showToast('❌ '+cleanErr(err))}
+}
 
 const _pending={};
 function queueCloudPush(key,store){clearTimeout(_pending[store+key]);_pending[store+key]=setTimeout(()=>cloudPush(key,store),700)}
 async function cloudPush(key,store){
   const pair=store==='pred'?predicted(key):actual(key);if(!hasBoth(pair))return;
   try{
-    if(store==='pred'){if(!player)return;await sb('predictions?on_conflict=player_id,match_key',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({player_id:player.id,match_key:key,s1:pair[0],s2:pair[1]})})}
+    if(store==='pred'){if(!player)return;await sb('rpc/save_prediction',{method:'POST',body:JSON.stringify({p_token:player.token,p_key:key,p_s1:pair[0],p_s2:pair[1]})})}
     else{if(!adminCode)return;await sb('rpc/set_result',{method:'POST',body:JSON.stringify({p_key:key,p_s1:pair[0],p_s2:pair[1],p_code:adminCode})})}
     setCloudStatus(true);
   }catch(err){const m=String(err);
@@ -515,8 +552,8 @@ async function syncNow(){
     results.forEach(r=>{S[r.match_key]=String(r.s1);S[r.match_key+'b']=String(r.s2)});
     if(player){
       const played=new Set(results.map(r=>r.match_key));const rows=[];
-      allMatchKeys().forEach(mk=>{const p=predicted(mk.key);if(hasBoth(p)&&!played.has(mk.key)&&!matchStarted(mk.key))rows.push({player_id:player.id,match_key:mk.key,s1:p[0],s2:p[1]})});
-      if(rows.length)await sb('predictions?on_conflict=player_id,match_key',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(rows)}).catch(()=>{});
+      allMatchKeys().forEach(mk=>{const p=predicted(mk.key);if(hasBoth(p)&&!played.has(mk.key)&&!matchStarted(mk.key))rows.push({k:mk.key,s1:p[0],s2:p[1]})});
+      if(rows.length)await sb('rpc/save_predictions',{method:'POST',body:JSON.stringify({p_token:player.token,p_items:rows})}).catch(()=>{});
       const mine=await sb('predictions?player_id=eq.'+player.id+'&select=match_key,s1,s2');
       mine.forEach(p=>{S[PRED+p.match_key]=String(p.s1);S[PRED+p.match_key+'b']=String(p.s2)});
     }
@@ -528,14 +565,7 @@ function setCloudStatus(ok){const el=document.getElementById('cloudChip');if(!el
 
 async function renderLeaderboard(){
   const c=document.getElementById('leadContainer');
-  if(!player){
-    c.innerHTML=`<div class="help-card" style="text-align:center"><h3>🏅 Rejoindre le concours</h3>
-      <p>Choisis un pseudo pour comparer tes pronostics avec les autres.</p>
-      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px">
-        <input id="pseudoInput" type="text" maxlength="20" placeholder="Ton pseudo" style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--txt);font-family:inherit;font-size:16px" onkeydown="if(event.key==='Enter')joinContest()">
-        <button class="modal-btn" style="margin:0" onclick="joinContest()">⚽ Rejoindre</button></div></div>`;
-    return;
-  }
+  if(!player){c.innerHTML=authCardHTML();return}
   c.innerHTML='<div class="empty-state"><div class="big">⏳</div>Chargement…</div>';
   let players,preds,results;
   try{[players,preds,results]=await Promise.all([sb('players?select=id,name'),sb('predictions?select=player_id,match_key,s1,s2'),sb('results?select=match_key,s1,s2')]);}
@@ -548,7 +578,8 @@ async function renderLeaderboard(){
   }).sort((a,b)=>b.total-a.total||b.exact-a.exact||a.name.localeCompare(b.name));
   let html=`<div class="lead-header"><span class="who">☁️ ${player.name}</span>
     <button onclick="syncNow().then(()=>renderAll())">🔄 Actualiser</button>
-    <button onclick="leaveContest()">🚪 Changer de pseudo</button></div>`;
+    ${adminCode?`<button onclick="adminResetPwd()">🔧 Réinit. mot de passe</button>`:''}
+    <button onclick="leaveContest()">🚪 Déconnexion</button></div>`;
   html+='<div class="lead-card"><h3>🏅 Classement des pronostiqueurs</h3>';
   if(!board.length)html+='<div class="empty-state" style="padding:20px">Personne n\'a encore rejoint.</div>';
   board.forEach((b,i)=>{const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
@@ -573,14 +604,7 @@ async function renderLeaderboard(){
 // ── Onglet Chat (séparé) ──
 function renderChatTab(){
   const c=document.getElementById('chatContainer');
-  if(!player){
-    c.innerHTML=`<div class="help-card" style="text-align:center"><h3>💬 Discussion</h3>
-      <p>Choisis un pseudo pour participer au chat (le même que pour le classement des joueurs).</p>
-      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px">
-        <input id="pseudoInput" type="text" maxlength="20" placeholder="Ton pseudo" style="padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--txt);font-family:inherit;font-size:16px" onkeydown="if(event.key==='Enter')joinContest()">
-        <button class="modal-btn" style="margin:0" onclick="joinContest()">⚽ Rejoindre</button></div></div>`;
-    return;
-  }
+  if(!player){c.innerHTML=authCardHTML();return}
   c.innerHTML='<div class="chat-card" id="chatSection"></div>';
   renderChat();
 }
@@ -607,9 +631,9 @@ async function renderChat(){
   const ta=document.getElementById('chatInput');
   if(ta){ta.value=chatDraft;const cnt=document.getElementById('chatCount');const upd=()=>{chatDraft=ta.value;cnt.textContent=`${ta.value.length}/200`};ta.addEventListener('input',upd);ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}});upd()}
 }
-async function sendMessage(){if(!player)return;const ta=document.getElementById('chatInput');const body=(ta?ta.value:'').trim();if(!body)return;try{await sb('messages',{method:'POST',body:JSON.stringify({player_id:player.id,body})});chatDraft='';await renderChat()}catch{showToast('❌ Message non envoyé')}}
+async function sendMessage(){if(!player)return;const ta=document.getElementById('chatInput');const body=(ta?ta.value:'').trim();if(!body)return;try{await sb('rpc/post_message',{method:'POST',body:JSON.stringify({p_token:player.token,p_body:body})});chatDraft='';await renderChat()}catch{showToast('❌ Message non envoyé')}}
 async function deleteMessage(id){if(!adminCode)return;if(!confirm('Supprimer ce message ?'))return;try{await sb('rpc/delete_message',{method:'POST',body:JSON.stringify({msg_id:id,code:adminCode})});await renderChat()}catch{showToast('❌ Suppression impossible')}}
-async function toggleReaction(mid,emoji){if(!player)return;closeEmojiPopover();try{if(chatMyReacts.has(mid+'|'+emoji))await sb(`reactions?message_id=eq.${mid}&player_id=eq.${player.id}&emoji=eq.${encodeURIComponent(emoji)}`,{method:'DELETE'});else await sb('reactions',{method:'POST',body:JSON.stringify({message_id:mid,player_id:player.id,emoji})});await renderChat()}catch{showToast('❌ Réaction impossible')}}
+async function toggleReaction(mid,emoji){if(!player)return;closeEmojiPopover();try{await sb('rpc/toggle_reaction',{method:'POST',body:JSON.stringify({p_token:player.token,p_msg:mid,p_emoji:emoji})});await renderChat()}catch{showToast('❌ Réaction impossible')}}
 let _emojiPop=null,_emojiOutside=null;
 function closeEmojiPopover(){if(_emojiPop){_emojiPop.remove();_emojiPop=null}if(_emojiOutside){document.removeEventListener('mousedown',_emojiOutside,true);_emojiOutside=null}}
 function showEmojiPopover(anchor,emojis,onPick,keepOpen){closeEmojiPopover();const pop=document.createElement('div');pop.className='emoji-pop';pop.innerHTML=emojis.map(e=>`<button type="button">${e}</button>`).join('');document.body.appendChild(pop);const r=anchor.getBoundingClientRect();let top=r.top-pop.offsetHeight-8;if(top<8)top=r.bottom+8;let left=Math.min(r.left,window.innerWidth-pop.offsetWidth-8);pop.style.top=Math.max(8,top)+'px';pop.style.left=Math.max(8,left)+'px';pop.querySelectorAll('button').forEach((b,i)=>b.addEventListener('click',ev=>{ev.preventDefault();onPick(emojis[i]);if(!keepOpen)closeEmojiPopover()}));_emojiPop=pop;_emojiOutside=ev=>{if(!pop.contains(ev.target)&&ev.target!==anchor)closeEmojiPopover()};setTimeout(()=>document.addEventListener('mousedown',_emojiOutside,true),0)}
@@ -748,6 +772,9 @@ function isTyping(){const a=document.activeElement;return !!a&&(a.tagName==='INP
   setMode('res');
   if(!localStorage.getItem(WELCOME_KEY))showWelcome();
   try{await loadMatches()}catch{document.getElementById('standingsContainer').innerHTML='<div class="empty-state"><div class="big">⚠️</div>Impossible de charger les matchs.</div>'}
+  // restauration / validation de la session
+  if(player&&player.token){try{const me=await sb('rpc/whoami',{method:'POST',body:JSON.stringify({p_token:player.token})});if(!me){player=null;localStorage.removeItem(PLAYER_KEY)}else{player.id=me.id;player.name=me.name}}catch{}}
+  else if(player&&!player.token){player=null;localStorage.removeItem(PLAYER_KEY)}
   await syncNow();
   renderAll();
   setInterval(()=>{if(document.visibilityState==='visible'&&!isTyping())syncNow().then(()=>{if(!isTyping())renderAll()})},5*60*1000);
