@@ -515,7 +515,7 @@ function authCardHTML(){
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
         <input id="auName" maxlength="20" placeholder="Pseudo" style="${inp}">
         <input id="auPass" type="password" placeholder="Mot de passe (4 caractères min.)" style="${inp}">
-        <input id="auEmail" placeholder="Email (optionnel)" style="${inp}">
+        <input id="auEmail" type="email" placeholder="Email" style="${inp}">
         <div style="text-align:left;margin-top:6px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)">
           <p style="font-size:.72rem;color:var(--muted);margin:0 0 8px">Avant de créer ton compte, merci de confirmer (obligatoire) :</p>
           ${LEGAL_CHECKS.map(([id,txt])=>`<label style="display:flex;gap:8px;align-items:flex-start;font-size:.74rem;line-height:1.4;cursor:pointer;margin:7px 0"><input type="checkbox" id="${id}" style="margin-top:2px;flex-shrink:0"><span>${txt}</span></label>`).join('')}
@@ -536,9 +536,10 @@ function refreshAuth(){if(currentTab==='lead')renderLeaderboard();else if(curren
 async function doRegister(){
   const name=val('auName'),pass=val('auPass'),email=val('auEmail');
   if(!name||!pass){showToast('⚠️ Pseudo et mot de passe requis');return}
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showToast('⚠️ Une adresse email valide est requise');return}
   const allChecked=LEGAL_CHECKS.every(([id])=>document.getElementById(id)?.checked);
   if(!allChecked){showToast('⚠️ Tu dois accepter les documents obligatoires pour créer un compte');return}
-  try{const r=await sb('rpc/register_player',{method:'POST',body:JSON.stringify({p_name:name,p_email:email||null,p_password:pass,p_legal_version:LEGAL_VERSION})});
+  try{const r=await sb('rpc/register_player',{method:'POST',body:JSON.stringify({p_name:name,p_email:email,p_password:pass,p_legal_version:LEGAL_VERSION})});
     player={id:r.id,name:r.name,token:r.token};localStorage.setItem(PLAYER_KEY,JSON.stringify(player));showToast(`👋 Bienvenue ${player.name} !`);await syncNow();renderAll();}
   catch(err){showToast('❌ '+cleanErr(err))}
 }
