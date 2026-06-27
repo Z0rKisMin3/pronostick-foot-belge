@@ -260,6 +260,15 @@
 <footer style="text-align:center;color:var(--muted);font-size:.72rem;line-height:1.5;margin:34px auto 10px;max-width:640px;padding:16px;border-top:1px solid #ffffff14">
   <strong>PronoStick Foot Belge</strong> — application gratuite et indépendante de pronostics entre amis.<br>
   Sans affiliation officielle avec la Pro League, ses clubs ou ses sponsors. « Jupiler Pro League » et les noms de clubs sont cités à titre purement descriptif. Aucun pari d'argent.
+  <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center">
+    <a href="legal/cgu.html" target="_blank" rel="noopener" style="color:var(--muted)">CGU</a>
+    <a href="legal/confidentialite.html" target="_blank" rel="noopener" style="color:var(--muted)">Confidentialité (RGPD)</a>
+    <a href="legal/cookies.html" target="_blank" rel="noopener" style="color:var(--muted)">Cookies</a>
+    <a href="legal/mentions-legales.html" target="_blank" rel="noopener" style="color:var(--muted)">Mentions légales</a>
+    <a href="legal/reglement.html" target="_blank" rel="noopener" style="color:var(--muted)">Règlement</a>
+    <a href="legal/charte.html" target="_blank" rel="noopener" style="color:var(--muted)">Charte</a>
+    <a href="legal/index.html" target="_blank" rel="noopener" style="color:var(--muted)"><strong>Tous les documents ⚖️</strong></a>
+  </div>
 </footer>
 
 <div class="modal-overlay" id="welcomeModal">
@@ -485,6 +494,17 @@ function renderPredictions(){
 // CONCOURS / JOUEURS / CHAT  (réutilisé du Mondial)
 // ═══════════════════════════════════════════
 let authMode='login';
+const LEGAL_VERSION='1.0-2026-06-27';
+const LK='target="_blank" rel="noopener" style="color:var(--purple);font-weight:600"';
+const LEGAL_CHECKS=[
+  ['chkCgu',`J'ai lu et j'accepte les <a href="legal/cgu.html" ${LK}>Conditions Générales d'Utilisation</a>.`],
+  ['chkConf',`J'ai lu la <a href="legal/confidentialite.html" ${LK}>Politique de confidentialité</a>.`],
+  ['chkCook',`J'ai pris connaissance de la <a href="legal/cookies.html" ${LK}>Politique cookies</a>.`],
+  ['chkChar',`J'ai lu et j'accepte la <a href="legal/charte.html" ${LK}>Charte de bonne conduite</a>.`],
+  ['chkJeu',`Je comprends qu'il s'agit d'un <a href="legal/jeu-gratuit.html" ${LK}>jeu gratuit</a>, sans mise, sans pari, sans gain financier ni récompense de valeur économique.`],
+  ['chkUniq',`Je confirme que je n'utiliserai qu'<strong>un seul compte</strong>.`],
+  ['chkExact',`Je confirme que mes informations d'inscription sont exactes.`],
+];
 function val(id){const e=document.getElementById(id);return e?e.value.trim():''}
 function cleanErr(err){try{return JSON.parse(err.message).message||err.message}catch{return String(err.message||err)}}
 function authCardHTML(){
@@ -496,8 +516,13 @@ function authCardHTML(){
         <input id="auName" maxlength="20" placeholder="Pseudo" style="${inp}">
         <input id="auPass" type="password" placeholder="Mot de passe (4 caractères min.)" style="${inp}">
         <input id="auEmail" placeholder="Email (optionnel)" style="${inp}">
-        <button class="modal-btn" style="margin:4px auto 0" onclick="doRegister()">⚽ S'inscrire</button></div>
-      <p style="font-size:.8rem;margin-top:12px;color:var(--muted2)">Déjà un compte ? <a onclick="authMode='login';refreshAuth()" style="color:var(--purple);cursor:pointer;font-weight:700">Se connecter</a></p></div>`;
+        <div style="text-align:left;margin-top:6px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)">
+          <p style="font-size:.72rem;color:var(--muted);margin:0 0 8px">Avant de créer ton compte, merci de confirmer (obligatoire) :</p>
+          ${LEGAL_CHECKS.map(([id,txt])=>`<label style="display:flex;gap:8px;align-items:flex-start;font-size:.74rem;line-height:1.4;cursor:pointer;margin:7px 0"><input type="checkbox" id="${id}" style="margin-top:2px;flex-shrink:0"><span>${txt}</span></label>`).join('')}
+        </div>
+        <button class="modal-btn" style="margin:4px auto 0" onclick="doRegister()">⚽ Créer mon compte</button></div>
+      <p style="font-size:.72rem;margin-top:8px;color:var(--muted)">📄 Tous les documents : <a href="legal/index.html" target="_blank" rel="noopener" style="color:var(--purple)">mentions légales & règlement</a></p>
+      <p style="font-size:.8rem;margin-top:8px;color:var(--muted2)">Déjà un compte ? <a onclick="authMode='login';refreshAuth()" style="color:var(--purple);cursor:pointer;font-weight:700">Se connecter</a></p></div>`;
   }
   return `<div class="help-card" style="max-width:420px;text-align:center"><h3>🔑 Connexion</h3>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
@@ -511,7 +536,9 @@ function refreshAuth(){if(currentTab==='lead')renderLeaderboard();else if(curren
 async function doRegister(){
   const name=val('auName'),pass=val('auPass'),email=val('auEmail');
   if(!name||!pass){showToast('⚠️ Pseudo et mot de passe requis');return}
-  try{const r=await sb('rpc/register_player',{method:'POST',body:JSON.stringify({p_name:name,p_email:email||null,p_password:pass})});
+  const allChecked=LEGAL_CHECKS.every(([id])=>document.getElementById(id)?.checked);
+  if(!allChecked){showToast('⚠️ Tu dois accepter les documents obligatoires pour créer un compte');return}
+  try{const r=await sb('rpc/register_player',{method:'POST',body:JSON.stringify({p_name:name,p_email:email||null,p_password:pass,p_legal_version:LEGAL_VERSION})});
     player={id:r.id,name:r.name,token:r.token};localStorage.setItem(PLAYER_KEY,JSON.stringify(player));showToast(`👋 Bienvenue ${player.name} !`);await syncNow();renderAll();}
   catch(err){showToast('❌ '+cleanErr(err))}
 }
