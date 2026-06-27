@@ -496,6 +496,8 @@ function renderPredictions(){
 // CONCOURS / JOUEURS / CHAT  (réutilisé du Mondial)
 // ═══════════════════════════════════════════
 let authMode='login';
+let authDraft={name:'',pass:'',email:'',checks:{}};
+function escAttr(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}
 const LEGAL_VERSION='1.0-2026-06-27';
 const LK='target="_blank" rel="noopener" style="color:var(--purple);font-weight:600"';
 const LEGAL_CHECKS=[
@@ -525,12 +527,12 @@ function authCardHTML(){
       <p style="font-size:.82rem">Un pseudo + un mot de passe perso pour <strong>protéger ton pseudo</strong> (personne d'autre ne pourra l'utiliser).</p>
       <p style="font-size:.78rem;color:var(--orange);background:#3a2a08;border:1px solid #f59e0b44;border-radius:8px;padding:8px 10px;margin-top:8px">⏳ Ton inscription est <strong>soumise à la validation de l'organisateur</strong>. Après l'avoir créée, préviens-le sur WhatsApp pour qu'il t'active.</p>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
-        <input id="auName" maxlength="20" placeholder="Pseudo" style="${inp}">
-        <input id="auPass" type="password" placeholder="Mot de passe (4 caractères min.)" style="${inp}">
-        <input id="auEmail" type="email" placeholder="Email" style="${inp}">
+        <input id="auName" maxlength="20" placeholder="Pseudo" value="${escAttr(authDraft.name)}" oninput="authDraft.name=this.value" style="${inp}">
+        <input id="auPass" type="password" placeholder="Mot de passe (4 caractères min.)" value="${escAttr(authDraft.pass)}" oninput="authDraft.pass=this.value" style="${inp}">
+        <input id="auEmail" type="email" placeholder="Email" value="${escAttr(authDraft.email)}" oninput="authDraft.email=this.value" style="${inp}">
         <div style="text-align:left;margin-top:6px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)">
           <p style="font-size:.72rem;color:var(--muted);margin:0 0 8px">Avant de créer ton compte, merci de confirmer (obligatoire) :</p>
-          ${LEGAL_CHECKS.map(([id,txt])=>`<label style="display:flex;gap:8px;align-items:flex-start;font-size:.74rem;line-height:1.4;cursor:pointer;margin:7px 0"><input type="checkbox" id="${id}" style="margin-top:2px;flex-shrink:0"><span>${txt}</span></label>`).join('')}
+          ${LEGAL_CHECKS.map(([id,txt])=>`<label style="display:flex;gap:8px;align-items:flex-start;font-size:.74rem;line-height:1.4;cursor:pointer;margin:7px 0"><input type="checkbox" id="${id}" ${authDraft.checks[id]?'checked':''} onchange="authDraft.checks['${id}']=this.checked" style="margin-top:2px;flex-shrink:0"><span>${txt}</span></label>`).join('')}
         </div>
         <button class="modal-btn" style="margin:4px auto 0" onclick="doRegister()">⚽ Créer mon compte</button></div>
       <p style="font-size:.72rem;margin-top:8px;color:var(--muted)">📄 Tous les documents : <a href="legal/index.html" target="_blank" rel="noopener" style="color:var(--purple)">mentions légales & règlement</a></p>
@@ -538,8 +540,8 @@ function authCardHTML(){
   }
   return `<div class="help-card" style="max-width:420px;text-align:center"><h3>🔑 Connexion</h3>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
-      <input id="auName" maxlength="20" placeholder="Pseudo" style="${inp}" onkeydown="if(event.key==='Enter')document.getElementById('auPass').focus()">
-      <input id="auPass" type="password" placeholder="Mot de passe" style="${inp}" onkeydown="if(event.key==='Enter')doLogin()">
+      <input id="auName" maxlength="20" placeholder="Pseudo" value="${escAttr(authDraft.name)}" oninput="authDraft.name=this.value" style="${inp}" onkeydown="if(event.key==='Enter')document.getElementById('auPass').focus()">
+      <input id="auPass" type="password" placeholder="Mot de passe" value="${escAttr(authDraft.pass)}" oninput="authDraft.pass=this.value" style="${inp}" onkeydown="if(event.key==='Enter')doLogin()">
       <button class="modal-btn" style="margin:4px auto 0" onclick="doLogin()">Se connecter</button></div>
     <p style="font-size:.8rem;margin-top:12px;color:var(--muted2)">Pas encore de compte ? <a onclick="authMode='register';refreshAuth()" style="color:var(--purple);cursor:pointer;font-weight:700">S'inscrire</a></p>
     <p style="font-size:.74rem;margin-top:8px;color:var(--muted)">🔒 Mot de passe oublié ? Demande à l'organisateur de le réinitialiser.</p></div>`;
@@ -552,14 +554,14 @@ async function doRegister(){
   const allChecked=LEGAL_CHECKS.every(([id])=>document.getElementById(id)?.checked);
   if(!allChecked){showToast('⚠️ Tu dois accepter les documents obligatoires pour créer un compte');return}
   try{const r=await sb('rpc/register_player',{method:'POST',body:JSON.stringify({p_name:name,p_email:email,p_password:pass,p_legal_version:LEGAL_VERSION})});
-    player={id:r.id,name:r.name,token:r.token,approved:false};localStorage.setItem(PLAYER_KEY,JSON.stringify(player));showToast('✅ Compte créé — en attente de validation');await syncNow();renderAll();}
+    player={id:r.id,name:r.name,token:r.token,approved:false};localStorage.setItem(PLAYER_KEY,JSON.stringify(player));authDraft={name:'',pass:'',email:'',checks:{}};showToast('✅ Compte créé — en attente de validation');await syncNow();renderAll();}
   catch(err){showToast('❌ '+cleanErr(err))}
 }
 async function doLogin(){
   const name=val('auName'),pass=val('auPass');
   if(!name||!pass){showToast('⚠️ Pseudo et mot de passe requis');return}
   try{const r=await sb('rpc/login_player',{method:'POST',body:JSON.stringify({p_name:name,p_password:pass})});
-    player={id:r.id,name:r.name,token:r.token,approved:r.approved!==false};localStorage.setItem(PLAYER_KEY,JSON.stringify(player));showToast(`👋 Salut ${player.name} !`);await syncNow();renderAll();}
+    player={id:r.id,name:r.name,token:r.token,approved:r.approved!==false};localStorage.setItem(PLAYER_KEY,JSON.stringify(player));authDraft={name:'',pass:'',email:'',checks:{}};showToast(`👋 Salut ${player.name} !`);await syncNow();renderAll();}
   catch(err){showToast('❌ '+cleanErr(err))}
 }
 function leaveContest(){if(!confirm('Se déconnecter ?'))return;player=null;localStorage.removeItem(PLAYER_KEY);authMode='login';renderAll();}
@@ -610,7 +612,8 @@ function setCloudStatus(ok){const el=document.getElementById('cloudChip');if(!el
 
 async function renderLeaderboard(){
   const c=document.getElementById('leadContainer');
-  if(!player){c.innerHTML=authCardHTML();return}
+  if(!player){if(!c.querySelector('#auName')||c.getAttribute('data-auth')!==authMode){c.innerHTML=authCardHTML();c.setAttribute('data-auth',authMode)}return}
+  c.removeAttribute('data-auth');
   c.innerHTML='<div class="empty-state"><div class="big">⏳</div>Chargement…</div>';
   let players,preds,results;
   try{[players,preds,results]=await Promise.all([sb('players?select=id,name'),sb('predictions?select=player_id,match_key,s1,s2'),sb('results?select=match_key,s1,s2')]);}
@@ -676,7 +679,8 @@ async function adminReject(id,name){if(!confirm(`Refuser et SUPPRIMER l'inscript
 // ── Onglet Chat (séparé) ──
 function renderChatTab(){
   const c=document.getElementById('chatContainer');
-  if(!player){c.innerHTML=authCardHTML();return}
+  if(!player){if(!c.querySelector('#auName')||c.getAttribute('data-auth')!==authMode){c.innerHTML=authCardHTML();c.setAttribute('data-auth',authMode)}return}
+  c.removeAttribute('data-auth');
   c.innerHTML='<div class="chat-card" id="chatSection"></div>';
   renderChat();
 }
