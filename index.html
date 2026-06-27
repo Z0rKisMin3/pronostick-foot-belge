@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0a0e1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="JPL 26/27">
-<title>⚽ Jupiler Pro League 2026/27 — Pronostics</title>
+<title>⚽ PronoStick Foot Belge — Pronostics du championnat de Belgique</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
   :root{
@@ -205,8 +205,8 @@
 </head>
 <body>
 <div class="container">
-<h1>⚽ Jupiler Pro League</h1>
-<p class="subtitle">Saison <span>2026/2027</span> · 18 clubs · 34 journées · Pronostics</p>
+<h1>⚽ PronoStick Foot Belge</h1>
+<p class="subtitle">Pronostics des matchs du championnat de Belgique 🇧🇪 · Saison <span>2026/2027</span> · 18 clubs · 34 journées</p>
 <div class="flag-bar" title="Belgique"></div>
 
 <div id="announceBar" class="announce" style="display:none"></div>
@@ -256,6 +256,11 @@
 <div id="view-lead" class="view"><div id="leadContainer"></div></div>
 <div id="view-chat" class="view"><div id="chatContainer"></div></div>
 <div id="view-help" class="view"><div id="helpContainer"></div></div>
+
+<footer style="text-align:center;color:var(--muted);font-size:.72rem;line-height:1.5;margin:34px auto 10px;max-width:640px;padding:16px;border-top:1px solid #ffffff14">
+  <strong>PronoStick Foot Belge</strong> — application gratuite et indépendante de pronostics entre amis.<br>
+  Sans affiliation officielle avec la Pro League, ses clubs ou ses sponsors. « Jupiler Pro League » et les noms de clubs sont cités à titre purement descriptif. Aucun pari d'argent.
+</footer>
 
 <div class="modal-overlay" id="welcomeModal">
   <div class="modal">
@@ -355,7 +360,7 @@ function renderStandings(){
       <td class="num">${r.l}</td><td class="num">${r.gf}</td><td class="num">${r.ga}</td><td class="num">${gd>0?'+':''}${gd}</td>
       <td class="num pts">${r.pts}</td></tr>`;
   });
-  document.getElementById('standingsContainer').innerHTML=`<div class="standings"><h3>🏆 Classement — Jupiler Pro League 2026/27</h3>
+  document.getElementById('standingsContainer').innerHTML=`<div class="standings"><h3>🏆 Classement du championnat de Belgique 2026/27</h3>
     <table class="stbl"><tr><th></th><th>#</th><th>Équipe</th><th class=num>J</th><th class=num>G</th><th class=num>N</th><th class=num>P</th><th class=num>BP</th><th class=num>BC</th><th class=num>Diff</th><th class=num>Pts</th></tr>${rows}</table>
     <div class="st-legend"><span><i style="background:#f59e0b"></i>Champion</span><span><i style="background:#10b981"></i>Europe (2-4)</span><span><i style="background:#ef4444"></i>Relégation (17-18)</span></div>
     <p style="font-size:.7rem;color:var(--muted);margin-top:8px">Départage : points, puis victoires, puis différence de buts (règlement belge).</p></div>`;
@@ -689,16 +694,17 @@ function renderLiveBar(){
 // ═══════════════════════════════════════════
 function renderHelp(){
   document.getElementById('helpContainer').innerHTML=`
-    <div class="help-card"><h3>⚽ C'est quoi ?</h3><p>Une appli pour pronostiquer la <strong>Jupiler Pro League 2026/27</strong> entre amis. Rien à installer.</p></div>
+    <div class="help-card"><h3>⚽ C'est quoi ?</h3><p><strong>PronoStick Foot Belge</strong> est une appli gratuite pour pronostiquer entre amis les matchs du <strong>championnat de Belgique 2026/27</strong> (Jupiler Pro League). Rien à installer.</p></div>
     <div class="help-card"><h3>🔮 Faire ses pronostics</h3><p>Clique sur <strong style="color:var(--purple)">🔮 Pronostics</strong> en haut, puis saisis tes scores dans le <strong>Calendrier</strong>, <strong>avant les coups d'envoi</strong> (champs violets).</p><ul><li>✅ Score exact = <strong>3 points</strong></li><li>👍 Bon résultat (1/N/2) = <strong>1 point</strong></li><li>❌ Raté = 0</li></ul><p>Verrouillé 🔒 dès le coup d'envoi du match — pas de triche !</p></div>
     <div class="help-card"><h3>📝 Résultats & classement</h3><p>Les résultats officiels sont encodés par l'organisateur (🔑) et arrivent automatiquement. Le <strong>classement du championnat</strong> et le <strong>classement des pronostiqueurs</strong> se calculent tout seuls.</p></div>
     <div class="help-card"><h3>🏅 Joueurs & 💬 Chat</h3><p>Onglet <strong>Joueurs</strong> : choisis un pseudo pour rejoindre et vois le classement des pronostiqueurs en direct. Onglet <strong>Chat</strong> : discute et réagis avec des émojis. Les pronos des autres restent cachés jusqu'au coup d'envoi 🙈</p></div>
     <div class="help-card"><h3>💾 Sauvegarde</h3><div class="warn">Tes données sont liées à <strong>ce navigateur</strong>. Garde le même pseudo si tu changes d'appareil (tes pronos sont récupérés). Évite de vider les données du navigateur.</div></div>
     <div class="help-card"><h3>📅 Calendrier roulant</h3><p>Les journées apparaissent <strong>au fur et à mesure</strong> qu'elles sont officialisées par la Pro League (~5 semaines avant). Normal de ne pas voir toute la saison d'un coup !</p></div>
+    <div class="help-card"><h3>⚖️ Mentions légales</h3><div class="warn"><strong>PronoStick Foot Belge</strong> est une application gratuite et <strong>indépendante</strong>, sans aucune affiliation ni partenariat officiel avec la Pro League, ses clubs ou ses sponsors. Les noms « Jupiler Pro League » et des clubs ne sont utilisés qu'à titre <strong>descriptif</strong> pour désigner la compétition concernée. Aucun pari d'argent : pronostics entre amis, pour le plaisir.</div></div>
     <p style="text-align:center;color:var(--muted);font-size:.85rem;padding:10px 0 30px">Bonne saison ! 🇧🇪⚽</p>`;
 }
 const WELCOME_KEY2=WELCOME_KEY;
-function showWelcome(){document.getElementById('welcomeBody').innerHTML=`<p>Pronostique la <strong>Jupiler Pro League 2026/27</strong> entre amis ⚽</p><p><strong style="color:var(--purple)">🔮 Pronostics</strong> — prédis les scores avant les matchs : exact = 3 pts, bon résultat = 1 pt. Verrouillé au coup d'envoi 🔒</p><p>🏆 Classement du championnat + 🏅 classement des pronostiqueurs + 💬 chat.</p><div class="warn">📅 Les journées s'ajoutent au fil de leur officialisation. 💾 Données liées à ce navigateur — détails dans l'onglet <strong>❓ Aide</strong>.</div>`;document.getElementById('welcomeModal').classList.add('show')}
+function showWelcome(){document.getElementById('welcomeBody').innerHTML=`<p>Pronostique les matchs du <strong>championnat de Belgique 2026/27</strong> entre amis ⚽</p><p><strong style="color:var(--purple)">🔮 Pronostics</strong> — prédis les scores avant les matchs : exact = 3 pts, bon résultat = 1 pt. Verrouillé au coup d'envoi 🔒</p><p>🏆 Classement du championnat + 🏅 classement des pronostiqueurs + 💬 chat.</p><div class="warn">📅 Les journées s'ajoutent au fil de leur officialisation. 💾 Données liées à ce navigateur — détails dans l'onglet <strong>❓ Aide</strong>.</div>`;document.getElementById('welcomeModal').classList.add('show')}
 function closeWelcome(){document.getElementById('welcomeModal').classList.remove('show');localStorage.setItem(WELCOME_KEY2,'1')}
 
 // ═══════════════════════════════════════════
@@ -714,7 +720,7 @@ function updateStats(){
   document.getElementById('predPointsChip').textContent=ps.total;
 }
 function resetAll(){if(!confirm('🗑️ Effacer tous tes scores et pronostics locaux ?'))return;S={};localStorage.removeItem(STORE_KEY);renderAll();showToast('🗑️ Effacé')}
-function exportJSON(){const blob=new Blob([JSON.stringify({exported:new Date().toISOString(),scores:S},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`jupiler_2627_${new Date().toISOString().slice(0,10)}.json`;a.click();showToast('📥 Exporté')}
+function exportJSON(){const blob=new Blob([JSON.stringify({exported:new Date().toISOString(),scores:S},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`pronostick_foot_belge_2627_${new Date().toISOString().slice(0,10)}.json`;a.click();showToast('📥 Exporté')}
 function importJSON(){const inp=document.getElementById('importFile');inp.onchange=function(){const f=this.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);S=d.scores||d;saveScores();renderAll();showToast('📤 Importé')}catch{showToast('❌ Fichier invalide')}this.value=''};r.readAsText(f)};inp.click()}
 function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2500)}
 
